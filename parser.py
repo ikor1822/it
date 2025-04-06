@@ -7,7 +7,6 @@ import re
 import csv
 
 
-
 def select_department():
     department = Select(WebDriverWait(browser, 5).until(
         EC.element_to_be_clickable((By.ID, "department"))
@@ -23,6 +22,7 @@ def select_department():
         EC.element_to_be_clickable((By.XPATH, "//button[text()='Отобразить']"))
     )
     button.click()
+
 
 browser = webdriver.Chrome()
 browser.get("https://mai.ru/education/studies/schedule/groups.php")
@@ -47,11 +47,8 @@ group = WebDriverWait(browser, 5).until(
 ActionChains(browser).move_to_element(group).perform()
 group.click()
 
-
 with open("groups.txt", "r", encoding="utf-8") as file:
     gro = [line.strip() for line in file]
-
-
 
 for gr in gro:
     select_department()
@@ -92,7 +89,7 @@ for gr in gro:
                 EC.element_to_be_clickable((By.ID, "nav-2-3-tab"))
             )
             ActionChains(browser).move_to_element(elem).perform()
-            elem.click()   
+            elem.click()
     elif gr[4] == '3':
         if gr[7] == 'Б':
             elem = WebDriverWait(browser, 5).until(
@@ -113,34 +110,25 @@ for gr in gro:
         ActionChains(browser).move_to_element(elem).perform()
         elem.click()
 
-
-
-    
     link1 = f"//a[@href='index.php?group={gr}']"
     group = WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.XPATH, link1)))
     ActionChains(browser).move_to_element(group).perform()
     group.click()
 
-
     for n in range(1, 19):
         # Переход на нужную неделю
-        WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.XPATH, "/html/body/main/div/div/div[1]/article/div[3]/div/a[2]"))).click()
+        WebDriverWait(browser, 5).until(
+            EC.element_to_be_clickable((By.XPATH, "/html/body/main/div/div/div[1]/article/div[3]/div/a[2]"))).click()
         link = f'/html/body/main/div/div/div[1]/article/div[4]/div/div/ul/li[{n}]/a'
         WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.XPATH, link))).click()
-
-        # текст расписания
-        day = WebDriverWait(browser, 5).until(
-            EC.presence_of_element_located((By.XPATH, "/html/body/main/div/div/div[1]/article/ul"))
-        )
-        a = day.text
-
-
-
-
-
-
-
-
+        
+        try:
+            day = browser.find_element(By.XPATH, "/html/body/main/div/div/div[1]/article/ul")
+            a = day.text
+            # обработка расписания
+        except:
+            print("Нет пар")
+            # Переход к следующему блоку кода или следующей итерации цикла
 
         lines = a.split("\n")
         filtered_schedule = []
@@ -150,7 +138,7 @@ for gr in gro:
 
         for line in lines:
             line = line.strip()
-            
+
             if re.match(r"^(Пн|Вт|Ср|Чт|Пт|Сб),", line):
                 current_date = line.replace(",", "")
             elif "ПЗ" in line or "ЛР" in line:
@@ -178,25 +166,23 @@ for gr in gro:
                         else:
                             teacher = details
 
-                    filtered_schedule.append((current_subject, current_date, time_slot, lesson_type, teacher, classroom, gr))
+                    filtered_schedule.append(
+                        (current_subject, current_date, time_slot, lesson_type, teacher, classroom, gr))
                 current_subject = ""
                 lesson_type = ""
 
         # Запись в CSV
         with open("schedule.csv", "a", newline="", encoding="utf-8") as file:
             writer = csv.writer(file)
-            if file.tell() == 0: 
+            if file.tell() == 0:
                 writer.writerow(["subject", "date", "time", "lesson_type", "teacher", "classroom", "group"])
             writer.writerows(filtered_schedule)
 
-        print("Данные успешно записаны в schedule.csv!")
+        print("Данные успешно записаны в schedule.csv")
     back = WebDriverWait(browser, 5).until(
         EC.element_to_be_clickable((By.XPATH, "/html/body/main/div/div/div[1]/article/div[3]/div/a[1]"))
     )
     ActionChains(browser).move_to_element(back).perform()
     back.click()
-
-
-
 
 browser.quit()

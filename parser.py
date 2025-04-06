@@ -55,25 +55,67 @@ with open("groups.txt", "r", encoding="utf-8") as file:
 
 for gr in gro:
     select_department()
-    if gr[7] == 'Б':
+    if gr[4] == '1':
+        if gr[7] == 'Б':
+            elem = WebDriverWait(browser, 5).until(
+                EC.element_to_be_clickable((By.ID, "nav-1-3-tab"))
+            )
+            ActionChains(browser).move_to_element(elem).perform()
+            elem.click()
+        elif gr[7] == 'С':
+            elem = WebDriverWait(browser, 5).until(
+                EC.element_to_be_clickable((By.ID, "nav-1-2-tab"))
+            )
+            ActionChains(browser).move_to_element(elem).perform()
+            elem.click()
+        elif gr[7] == 'А':
+            elem = WebDriverWait(browser, 5).until(
+                EC.element_to_be_clickable((By.ID, "nav-1-1-tab"))
+            )
+            ActionChains(browser).move_to_element(elem).perform()
+            elem.click()
+    elif gr[4] == '2':
+        if gr[7] == 'Б':
+            elem = WebDriverWait(browser, 5).until(
+                EC.element_to_be_clickable((By.ID, "nav-2-1-tab"))
+            )
+            ActionChains(browser).move_to_element(elem).perform()
+            elem.click()
+        elif gr[7] == 'М':
+            elem = WebDriverWait(browser, 5).until(
+                EC.element_to_be_clickable((By.ID, "nav-2-2-tab"))
+            )
+            ActionChains(browser).move_to_element(elem).perform()
+            elem.click()
+        elif gr[7] == 'А':
+            elem = WebDriverWait(browser, 5).until(
+                EC.element_to_be_clickable((By.ID, "nav-2-3-tab"))
+            )
+            ActionChains(browser).move_to_element(elem).perform()
+            elem.click()   
+    elif gr[4] == '3':
+        if gr[7] == 'Б':
+            elem = WebDriverWait(browser, 5).until(
+                EC.element_to_be_clickable((By.ID, "nav-3-1-tab"))
+            )
+            ActionChains(browser).move_to_element(elem).perform()
+            elem.click()
+        elif gr[7] == 'А':
+            elem = WebDriverWait(browser, 5).until(
+                EC.element_to_be_clickable((By.ID, "nav-3-2-tab"))
+            )
+            ActionChains(browser).move_to_element(elem).perform()
+            elem.click()
+    elif gr[4] == '4':
         elem = WebDriverWait(browser, 5).until(
-            EC.element_to_be_clickable((By.ID, "nav-1-3-tab"))
-        )
-        ActionChains(browser).move_to_element(elem).perform()
-        elem.click()
-    elif gr[7] == 'С':
-        elem = WebDriverWait(browser, 5).until(
-            EC.element_to_be_clickable((By.ID, "nav-1-2-tab"))
-        )
-        ActionChains(browser).move_to_element(elem).perform()
-        elem.click()
-    elif gr[7] == 'А':
-        elem = WebDriverWait(browser, 5).until(
-            EC.element_to_be_clickable((By.ID, "nav-1-1-tab"))
+            EC.element_to_be_clickable((By.ID, "nav-4-1-tab"))
         )
         ActionChains(browser).move_to_element(elem).perform()
         elem.click()
 
+
+
+    
     link1 = f"//a[@href='index.php?group={gr}']"
     group = WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.XPATH, link1)))
     ActionChains(browser).move_to_element(group).perform()

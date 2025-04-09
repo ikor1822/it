@@ -46,7 +46,6 @@ def process_part(part):
             else:
                 return "", f"{teacher_part} {room}"
     
-    # Если нет маркера, считаем строку преподавателями
     if re.match(r"^[А-Яа-яЁё\s,\.]+$", part):
         teachers = " ".join(part.split())
         words = teachers.split()

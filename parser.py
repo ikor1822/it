@@ -6,23 +6,40 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import re
 import csv
-
+import logging
 
 def select_department(browser):
     department = Select(WebDriverWait(browser, 5).until(
         EC.element_to_be_clickable((By.ID, "department"))
     ))
     department.select_by_visible_text("Институт №8")
-
+    
     course = Select(WebDriverWait(browser, 5).until(
         EC.element_to_be_clickable((By.ID, "course"))
     ))
     course.select_by_visible_text("Все курсы")
-
+    
     button = WebDriverWait(browser, 5).until(
         EC.element_to_be_clickable((By.XPATH, "//button[text()='Отобразить']"))
     )
     button.click()
+
+def process_part(part):
+    part = part.strip()
+    if re.match(r"^(ГУК|Орш\.|--каф\.|\d+-\d+)", part):
+        return "", part
+    for marker in ["ГУК", "Орш.", "--каф."]:
+        if marker in part:
+            try:
+                teacher, room = part.split(marker, 1)
+                if re.match(r"^[А-Яа-яЁё\s]+$", teacher.strip()) and len(teacher.split()) in [2, 3]:
+                    return teacher.strip(), f"{marker} {room.strip()}"
+                else:
+                    return "", f"{teacher.strip()} {marker} {room.strip()}"
+            except ValueError:
+                return part, ""
+    if re.match(r"^[А-Яа-яЁё\s]+$", part) and len(part.split()) in [2, 3]:
+        return part, ""
 
 def main():
     options = Options()
@@ -31,8 +48,7 @@ def main():
     options.add_argument("--window-size=1920,1080")
     browser = webdriver.Chrome(options=options)
     browser.get("https://mai.ru/education/studies/schedule/groups.php")
-
-    # Закрытие баннера с куками
+    
     try:
         cookie_button = WebDriverWait(browser, 5).until(
             EC.element_to_be_clickable((By.XPATH, "//button[@data-bs-dismiss='alert']"))
@@ -43,106 +59,97 @@ def main():
         )
     except:
         pass
-
+    
     select_department(browser)
-
+    
     group = WebDriverWait(browser, 5).until(
         EC.element_to_be_clickable((By.XPATH, '//*[@id="nav-1-1-eg1"]/a[1]'))
     )
     ActionChains(browser).move_to_element(group).perform()
     group.click()
-
+    
     with open("groups.txt", "r", encoding="utf-8") as file:
         gro = [line.strip() for line in file]
-
+    
     for gr in gro:
-        print(gr)
+        print(f"Обработка группы: {gr}")
         select_department(browser)
+
         if gr[4] == '1':
             if gr[7] == 'Б':
                 elem = WebDriverWait(browser, 5).until(
                     EC.element_to_be_clickable((By.ID, "nav-1-3-tab"))
                 )
-                ActionChains(browser).move_to_element(elem).perform()
-                elem.click()
             elif gr[7] == 'С':
                 elem = WebDriverWait(browser, 5).until(
                     EC.element_to_be_clickable((By.ID, "nav-1-2-tab"))
                 )
-                ActionChains(browser).move_to_element(elem).perform()
-                elem.click()
             elif gr[7] == 'А':
                 elem = WebDriverWait(browser, 5).until(
                     EC.element_to_be_clickable((By.ID, "nav-1-1-tab"))
                 )
-                ActionChains(browser).move_to_element(elem).perform()
-                elem.click()
         elif gr[4] == '2':
             if gr[7] == 'Б':
                 elem = WebDriverWait(browser, 5).until(
                     EC.element_to_be_clickable((By.ID, "nav-2-1-tab"))
                 )
-                ActionChains(browser).move_to_element(elem).perform()
-                elem.click()
             elif gr[7] == 'М':
                 elem = WebDriverWait(browser, 5).until(
                     EC.element_to_be_clickable((By.ID, "nav-2-2-tab"))
                 )
-                ActionChains(browser).move_to_element(elem).perform()
-                elem.click()
             elif gr[7] == 'А':
                 elem = WebDriverWait(browser, 5).until(
                     EC.element_to_be_clickable((By.ID, "nav-2-3-tab"))
                 )
-                ActionChains(browser).move_to_element(elem).perform()
-                elem.click()
         elif gr[4] == '3':
             if gr[7] == 'Б':
                 elem = WebDriverWait(browser, 5).until(
                     EC.element_to_be_clickable((By.ID, "nav-3-1-tab"))
                 )
-                ActionChains(browser).move_to_element(elem).perform()
-                elem.click()
             elif gr[7] == 'А':
                 elem = WebDriverWait(browser, 5).until(
                     EC.element_to_be_clickable((By.ID, "nav-3-2-tab"))
                 )
-                ActionChains(browser).move_to_element(elem).perform()
-                elem.click()
         elif gr[4] == '4':
             elem = WebDriverWait(browser, 5).until(
                 EC.element_to_be_clickable((By.ID, "nav-4-1-tab"))
             )
-            ActionChains(browser).move_to_element(elem).perform()
-            elem.click()
-
+        
+        ActionChains(browser).move_to_element(elem).perform()
+        elem.click()
+    
         link1 = f"//a[@href='index.php?group={gr}']"
-        group = WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.XPATH, link1)))
+        group = WebDriverWait(browser, 5).until(
+            EC.element_to_be_clickable((By.XPATH, link1))
+        )
         ActionChains(browser).move_to_element(group).perform()
         group.click()
-
+    
         for n in range(1, 19):
-            # Переход на нужную неделю
-            WebDriverWait(browser, 5).until(
-                EC.element_to_be_clickable((By.XPATH, "/html/body/main/div/div/div[1]/article/div[3]/div/a[2]"))).click()
-            link = f'/html/body/main/div/div/div[1]/article/div[4]/div/div/ul/li[{n}]/a'
-            WebDriverWait(browser, 5).until(EC.element_to_be_clickable((By.XPATH, link))).click()
-            
             try:
+                WebDriverWait(browser, 5).until(
+                    EC.element_to_be_clickable((By.XPATH, 
+                        "/html/body/main/div/div/div[1]/article/div[3]/div/a[2]"))
+                ).click()
+                link = f'/html/body/main/div/div/div[1]/article/div[4]/div/div/ul/li[{n}]/a'
+                WebDriverWait(browser, 5).until(
+                    EC.element_to_be_clickable((By.XPATH, link))
+                ).click()
+                
                 day = browser.find_element(By.XPATH, "/html/body/main/div/div/div[1]/article/ul")
                 a = day.text
             except:
-                print("Нет пар")
-
+                print(f"Нет пар для недели {n}")
+                continue
+            
             lines = a.split("\n")
             filtered_schedule = []
             current_date = ""
             current_subject = ""
             lesson_type = ""
-
+            
             for line in lines:
                 line = line.strip()
-
                 if re.match(r"^(Пн|Вт|Ср|Чт|Пт|Сб),", line):
                     current_date = line.replace(",", "")
                 elif "ПЗ" in line or "ЛР" in line:
@@ -160,39 +167,44 @@ def main():
                         details = match.group(2).strip()
                         teacher = ""
                         classroom = ""
-
-                        parts = [p.strip() for p in re.split(r",\s*", details)]
-
-                        cabinet_pattern = r"^(ГУК|Орш\.|--каф\.|\d+-\d+)"
-                        cabinets = [p for p in parts if re.match(cabinet_pattern, p)]
-                        others = [p for p in parts if not re.match(cabinet_pattern, p)]
-
-                        if others:
-                            teacher = ", ".join(others)
-                        if cabinets:
-                            classroom = ", ".join(cabinets)
-
+                        
+                        if "," in details:
+                            parts = [p.strip() for p in details.split(",")]
+                            teacher_list = []
+                            cabinet_list = []
+                            for part in parts:
+                                t, c = process_part(part)
+                                if t:
+                                    teacher_list.append(t)
+                                if c:
+                                    cabinet_list.append(c)
+                            teacher = ", ".join(teacher_list) if teacher_list else ""
+                            classroom = ", ".join(cabinet_list) if cabinet_list else ""
+                        else:
+                            t, c = process_part(details)
+                            teacher = t
+                            classroom = c
+                        
                         filtered_schedule.append(
                             (current_subject, current_date, time_slot, lesson_type, teacher, classroom, gr)
                         )
-
                     current_subject = ""
                     lesson_type = ""
 
-            # Запись в CSV
             with open("schedule.csv", "a", newline="", encoding="utf-8") as file:
-                writer = csv.writer(file)
+                writer = csv.writer(file, delimiter=";")
                 if file.tell() == 0:
                     writer.writerow(["subject", "date", "time", "lesson_type", "teacher", "classroom", "group"])
                 writer.writerows(filtered_schedule)
+    
+            print(f"Данные для недели {n} успешно записаны в schedule.csv")
 
-            print("Данные успешно записаны в schedule.csv")
         back = WebDriverWait(browser, 5).until(
             EC.element_to_be_clickable((By.XPATH, "/html/body/main/div/div/div[1]/article/div[3]/div/a[1]"))
         )
         ActionChains(browser).move_to_element(back).perform()
         back.click()
-
+    
     browser.quit()
 
 if __name__ == '__main__':

@@ -158,17 +158,19 @@ def main():
                     if match:
                         time_slot = match.group(1)
                         details = match.group(2).strip()
-                        teacher, classroom = "", ""
+                        teacher = ""
+                        classroom = ""
 
-                        match_details = re.match(r"^(.*?)\s+((?:ГУК|Орш\.|--каф\.|\d+-\d+).*)$", details)
-                        if match_details:
-                            teacher = match_details.group(1).strip()
-                            classroom = match_details.group(2).strip()
-                        else:
-                            if re.match(r"^(ГУК|Орш\.|--каф\.|\d+-\d+)", details):
-                                classroom = details
-                            else:
-                                teacher = details
+                        parts = [p.strip() for p in re.split(r",\s*", details)]
+
+                        cabinet_pattern = r"^(ГУК|Орш\.|--каф\.|\d+-\d+)"
+                        cabinets = [p for p in parts if re.match(cabinet_pattern, p)]
+                        others = [p for p in parts if not re.match(cabinet_pattern, p)]
+
+                        if others:
+                            teacher = ", ".join(others)
+                        if cabinets:
+                            classroom = ", ".join(cabinets)
 
                         filtered_schedule.append(
                             (current_subject, current_date, time_slot, lesson_type, teacher, classroom, gr)

@@ -6,7 +6,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import re
 import csv
-import logging
 
 def select_department(browser):
     department = Select(WebDriverWait(browser, 5).until(
@@ -28,18 +27,37 @@ def process_part(part):
     part = part.strip()
     if re.match(r"^(ГУК|Орш\.|--каф\.|\d+-\d+)", part):
         return "", part
+    
     for marker in ["ГУК", "Орш.", "--каф."]:
         if marker in part:
-            try:
-                teacher, room = part.split(marker, 1)
-                if re.match(r"^[А-Яа-яЁё\s]+$", teacher.strip()) and len(teacher.split()) in [2, 3]:
-                    return teacher.strip(), f"{marker} {room.strip()}"
-                else:
-                    return "", f"{teacher.strip()} {marker} {room.strip()}"
-            except ValueError:
-                return part, ""
-    if re.match(r"^[А-Яа-яЁё\s]+$", part) and len(part.split()) in [2, 3]:
-        return part, ""
+            teacher_part, room = part.split(marker, 1)
+            teacher_part = teacher_part.strip()
+            room = f"{marker} {room.strip()}"
+            if re.match(r"^[А-Яа-яЁё\s,\.]+$", teacher_part):
+                teachers = " ".join(teacher_part.split())  # Убираем лишние пробелы
+                # Предполагаем, что каждые три слова — это ФИО одного преподавателя
+                words = teachers.split()
+                formatted_teachers = []
+                for i in range(0, len(words), 3):
+                    name = " ".join(words[i:i+3])
+                    if name:
+                        formatted_teachers.append(name)
+                return ", ".join(formatted_teachers), room
+            else:
+                return "", f"{teacher_part} {room}"
+    
+    # Если нет маркера, считаем строку преподавателями
+    if re.match(r"^[А-Яа-яЁё\s,\.]+$", part):
+        teachers = " ".join(part.split())
+        words = teachers.split()
+        formatted_teachers = []
+        for i in range(0, len(words), 3):
+            name = " ".join(words[i:i+3])
+            if name:
+                formatted_teachers.append(name)
+        return ", ".join(formatted_teachers), ""
+    
+    return "", part
 
 def main():
     options = Options()
@@ -57,8 +75,8 @@ def main():
         WebDriverWait(browser, 5).until(
             EC.invisibility_of_element_located((By.XPATH, "//button[@data-bs-dismiss='alert']"))
         )
-    except:
-        pass
+    except Exception as e:
+        print("Нет Куки")
     
     select_department(browser)
     
@@ -72,7 +90,6 @@ def main():
         gro = [line.strip() for line in file]
     
     for gr in gro:
-        print(f"Обработка группы: {gr}")
         select_department(browser)
 
         if gr[4] == '1':
@@ -138,8 +155,8 @@ def main():
                 
                 day = browser.find_element(By.XPATH, "/html/body/main/div/div/div[1]/article/ul")
                 a = day.text
-            except:
-                print(f"Нет пар для недели {n}")
+            except Exception as e:
+                print("нет пар")
                 continue
             
             lines = a.split("\n")
@@ -165,25 +182,7 @@ def main():
                     if match:
                         time_slot = match.group(1)
                         details = match.group(2).strip()
-                        teacher = ""
-                        classroom = ""
-                        
-                        if "," in details:
-                            parts = [p.strip() for p in details.split(",")]
-                            teacher_list = []
-                            cabinet_list = []
-                            for part in parts:
-                                t, c = process_part(part)
-                                if t:
-                                    teacher_list.append(t)
-                                if c:
-                                    cabinet_list.append(c)
-                            teacher = ", ".join(teacher_list) if teacher_list else ""
-                            classroom = ", ".join(cabinet_list) if cabinet_list else ""
-                        else:
-                            t, c = process_part(details)
-                            teacher = t
-                            classroom = c
+                        teacher, classroom = process_part(details)
                         
                         filtered_schedule.append(
                             (current_subject, current_date, time_slot, lesson_type, teacher, classroom, gr)
@@ -197,7 +196,7 @@ def main():
                     writer.writerow(["subject", "date", "time", "lesson_type", "teacher", "classroom", "group"])
                 writer.writerows(filtered_schedule)
     
-            print(f"Данные для недели {n} успешно записаны в schedule.csv")
+            print(f'данные записаны для недели{n}')
 
         back = WebDriverWait(browser, 5).until(
             EC.element_to_be_clickable((By.XPATH, "/html/body/main/div/div/div[1]/article/div[3]/div/a[1]"))

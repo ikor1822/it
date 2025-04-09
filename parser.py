@@ -34,8 +34,7 @@ def process_part(part):
             teacher_part = teacher_part.strip()
             room = f"{marker} {room.strip()}"
             if re.match(r"^[А-Яа-яЁё\s,\.]+$", teacher_part):
-                teachers = " ".join(teacher_part.split())  # Убираем лишние пробелы
-                # Предполагаем, что каждые три слова — это ФИО одного преподавателя
+                teachers = " ".join(teacher_part.split())
                 words = teachers.split()
                 formatted_teachers = []
                 for i in range(0, len(words), 3):
@@ -45,8 +44,7 @@ def process_part(part):
                 return ", ".join(formatted_teachers), room
             else:
                 return "", f"{teacher_part} {room}"
-    
-    # Если нет маркера, считаем строку преподавателями
+
     if re.match(r"^[А-Яа-яЁё\s,\.]+$", part):
         teachers = " ".join(part.split())
         words = teachers.split()

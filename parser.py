@@ -131,10 +131,8 @@ def main():
             try:
                 day = browser.find_element(By.XPATH, "/html/body/main/div/div/div[1]/article/ul")
                 a = day.text
-                # обработка расписания
             except:
                 print("Нет пар")
-                # Переход к следующему блоку кода или следующей итерации цикла
 
             lines = a.split("\n")
             filtered_schedule = []
@@ -162,13 +160,11 @@ def main():
                         details = match.group(2).strip()
                         teacher, classroom = "", ""
 
-                        # Новый паттерн: находим аудиторию формата ГУК, Орш., 5-431 и т.п.
                         match_details = re.match(r"^(.*?)\s+((?:ГУК|Орш\.|--каф\.|\d+-\d+).*)$", details)
                         if match_details:
                             teacher = match_details.group(1).strip()
                             classroom = match_details.group(2).strip()
                         else:
-                            # Если всё ещё не определили — либо только аудитория, либо только преподаватель
                             if re.match(r"^(ГУК|Орш\.|--каф\.|\d+-\d+)", details):
                                 classroom = details
                             else:

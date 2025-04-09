@@ -25,37 +25,34 @@ def select_department(browser):
 
 def process_part(part):
     part = part.strip()
-    if re.match(r"^(ГУК|Орш\.|--каф\.|\d+-\d+)", part):
-        return "", part
+    teacher = ""
+    classroom = ""
+    markers = ["ГУК", "Орш.", "--каф."]
     
-    for marker in ["ГУК", "Орш.", "--каф."]:
+    for marker in markers:
         if marker in part:
-            teacher_part, room = part.split(marker, 1)
-            teacher_part = teacher_part.strip()
-            room = f"{marker} {room.strip()}"
-            if re.match(r"^[А-Яа-яЁё\s,\.]+$", teacher_part):
-                teachers = " ".join(teacher_part.split())
-                words = teachers.split()
-                formatted_teachers = []
-                for i in range(0, len(words), 3):
-                    name = " ".join(words[i:i+3])
-                    if name:
-                        formatted_teachers.append(name)
-                return ", ".join(formatted_teachers), room
+            try:
+                teacher, room = part.split(marker, 1)
+                classroom = f"{marker} {room.strip()}"
+                teacher = teacher.strip()
+                break
+            except ValueError:
+                classroom = part
+                teacher = ""
+    else:
+        words = part.split()
+        for i in range(len(words) - 1, -1, -1):
+            if re.match(r"\d+-\d+", words[i]):  
+                classroom = words[i]
+                teacher = " ".join(words[:i])
+                break
+        else:
+            if re.match(r"^[А-Яа-яЁё\s,\.]+$", part) and len(words) >= 2:
+                teacher = part
             else:
-                return "", f"{teacher_part} {room}"
-
-    if re.match(r"^[А-Яа-яЁё\s,\.]+$", part):
-        teachers = " ".join(part.split())
-        words = teachers.split()
-        formatted_teachers = []
-        for i in range(0, len(words), 3):
-            name = " ".join(words[i:i+3])
-            if name:
-                formatted_teachers.append(name)
-        return ", ".join(formatted_teachers), ""
+                classroom = part
     
-    return "", part
+    return teacher, classroom
 
 def main():
     options = Options()
@@ -194,7 +191,7 @@ def main():
                     writer.writerow(["subject", "date", "time", "lesson_type", "teacher", "classroom", "group"])
                 writer.writerows(filtered_schedule)
     
-            print(f'данные записаны для недели{n}')
+            print(f'данные записаны для недели {n}')
 
         back = WebDriverWait(browser, 5).until(
             EC.element_to_be_clickable((By.XPATH, "/html/body/main/div/div/div[1]/article/div[3]/div/a[1]"))

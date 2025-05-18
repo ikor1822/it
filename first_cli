@@ -7,6 +7,7 @@ from selenium.webdriver.support.ui import Select, WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import re
+import glob
 
 class ScheduleLoader:
     def __init__(self, cache_dir="schedule_cache"):
@@ -189,3 +190,36 @@ class ScheduleLoader:
         finally:
             if self.browser:
                 self.browser.quit()
+
+    def _filter_subject(self, schedule, subject):
+        return [record for record in schedule if subject.lower() in record['subject'].lower()]
+
+    def search_cache(self, subject=None, teacher=None, group=None):
+        results = []
+        cache_files = glob.glob(os.path.join(self.cache_dir, "*.pkl"))
+
+        for cache_file in cache_files:
+            filename = os.path.basename(cache_file)
+            try:
+                group_name, week_part = filename.replace('.pkl', '').split('_week')
+                week_num = int(week_part)
+            except ValueError:
+                continue
+
+            with open(cache_file, 'rb') as f:
+                schedule = pickle.load(f)
+                for record in schedule:
+                    match = True
+                    entry_group = record.get('group', group_name)
+                    if subject and subject.lower() not in record['subject'].lower():
+                        match = False
+                    if teacher and teacher.lower() not in record.get('teacher', '').lower():
+                        match = False
+                    if group and group.lower() not in entry_group.lower():
+                        match = False
+                    if match:
+                        record['group'] = entry_group
+                        record.setdefault('week', week_num)
+                        results.append(record)
+
+        return results

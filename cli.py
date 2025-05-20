@@ -8,6 +8,7 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
 import re
 import glob
+import argparse
 
 class ScheduleLoader:
     def __init__(self, cache_dir="schedule_cache"):
@@ -223,3 +224,46 @@ class ScheduleLoader:
                         results.append(record)
 
         return results
+
+def print_schedule(schedule):
+    if not schedule:
+        print("Нет данных в кэше по указанным критериям")
+        return
+    for record in schedule:
+        group = record.get('group', 'Не указана')
+        week = record.get('week', 'Не указана')
+        print(f"\nГруппа: {group} | Неделя: {week}")
+        print(f"Предмет: {record['subject']} {record['lesson_type']}")
+        print(f"Дата: {record['date']}")
+        print(f"Время: {record['time']}")
+        if record['teacher']:
+            print(f"Преподаватель: {record['teacher']}")
+        if record['classroom']:
+            print(f"Аудитория: {record['classroom']}")
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--group')
+    parser.add_argument('--week', type=int)
+    parser.add_argument('--subject')
+    parser.add_argument('--teacher')
+    parser.add_argument('--cache-only', action='store_true')
+
+    args = parser.parse_args()
+
+    loader = ScheduleLoader()
+
+    if args.cache_only:
+        found = loader.search_cache(subject=args.subject, teacher=args.teacher, group=args.group)
+        print_schedule(found)
+        return
+
+    if args.group and args.week:
+        data = loader.load_schedule(args.group, args.week, args.subject)
+        print_schedule(data)
+    else:
+        found = loader.search_cache(subject=args.subject, teacher=args.teacher, group=args.group)
+        print_schedule(found)
+
+if __name__ == "__main__":
+    main()

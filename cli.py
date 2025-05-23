@@ -1,5 +1,7 @@
 import pickle
 import os
+import subprocess
+import sys
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
@@ -10,12 +12,14 @@ import re
 import glob
 import argparse
 
+
 class ScheduleLoader:
     def __init__(self, cache_dir="schedule_cache"):
         self.cache_dir = cache_dir
         os.makedirs(self.cache_dir, exist_ok=True)
         self.browser = None
         self.options = Options()
+        self.options.add_argument("--headless")
         self.options.add_argument("--disable-gpu")
         self.options.add_argument("--window-size=1920,1080")
 
@@ -248,9 +252,17 @@ def main():
     parser.add_argument('--subject')
     parser.add_argument('--teacher')
     parser.add_argument('--cache-only', action='store_true')
+    parser.add_argument('--parser', action='store_true')
+    parser.add_argument('--BD', action='store_true')
+    args = parser.parse_args()
+    if args.parser:
+        subprocess.run([sys.executable, "parser.py"])
+        return
+    if args.BD:
+        subprocess.run([sys.executable, "BD.py"])
+        return
 
     args = parser.parse_args()
-
     loader = ScheduleLoader()
 
     if args.cache_only:

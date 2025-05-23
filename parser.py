@@ -141,7 +141,7 @@ def main():
             try:
                 WebDriverWait(browser, 5).until(
                     EC.element_to_be_clickable((By.XPATH, 
-                        "/html/body/main/div/div/div[1]/article/div[3]/div/a[2]"))
+                        "/html/body/main/div/div/div[1]/article/div[3]/div/a[3]"))
                 ).click()
                 link = f'/html/body/main/div/div/div[1]/article/div[4]/div/div/ul/li[{n}]/a'
                 WebDriverWait(browser, 5).until(
